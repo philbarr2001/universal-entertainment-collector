@@ -134,29 +134,123 @@ function checkTemporarilyClosed(cmsData) {
  *     ...
  *   ]
  */
+/**
+ * Recursively search an object for a key and return its value.
+ * Used as a fallback when the exact path isn't known.
+ */
+function findValueByKey(obj, targetKey, depth = 0) {
+  if (depth > 10 || !obj || typeof obj !== 'object') return null;
+  
+  if (Array.isArray(obj)) {
+    for (const item of obj) {
+      const result = findValueByKey(item, targetKey, depth + 1);
+      if (result !== null) return result;
+    }
+    return null;
+  }
+  
+  for (const key of Object.keys(obj)) {
+    if (key === targetKey) return obj[key];
+    const result = findValueByKey(obj[key], targetKey, depth + 1);
+    if (result !== null) return result;
+  }
+  return null;
+}
+
+/**
+ * Extract the eyebrow (show time) and style from a blockData object.
+ * Tries multiple Tridion CMS patterns since the nesting varies.
+ */
+function extractBlockInfo(blockData) {
+  let showTime = 'Unknown';
+  let isTentative = false;
+
+  if (!blockData) return { showTime, isTentative };
+
+  // Try multiple Tridion CMS patterns for the nested block
+  const blockEntries = 
+    blockData.EmbeddedValues ||
+    blockData.LinkedComponentValues ||
+    blockData.Values ||
+    [];
+
+  if (Array.isArray(blockEntries) && blockEntries.length > 0) {
+    const block = blockEntries[0];
+
+    // The eyebrow might be directly on the block, or nested under Fields
+    const eyebrowObj = block.eyebrow || block.Fields?.eyebrow;
+    if (eyebrowObj) {
+      showTime = eyebrowObj.Values?.[0] || eyebrowObj.Value || 'Unknown';
+    }
+
+    // Same for style
+    const styleObj = block.style || block.Fields?.style;
+    if (styleObj) {
+      const styleVal = styleObj.Values?.[0] || styleObj.Value || '';
+      isTentative = styleVal.toLowerCase().includes('disabled');
+    }
+  }
+
+  // Fallback: recursively search blockData for eyebrow
+  if (showTime === 'Unknown') {
+    const eyebrowFound = findValueByKey(blockData, 'eyebrow');
+    if (eyebrowFound) {
+      showTime = eyebrowFound.Values?.[0] || eyebrowFound.Value || 
+                 (typeof eyebrowFound === 'string' ? eyebrowFound : 'Unknown');
+    }
+  }
+
+  // Fallback: recursively search for style
+  if (!isTentative) {
+    const styleFound = findValueByKey(blockData, 'style');
+    if (styleFound) {
+      const styleVal = styleFound.Values?.[0] || styleFound.Value || 
+                       (typeof styleFound === 'string' ? styleFound : '');
+      isTentative = styleVal.toLowerCase().includes('disabled');
+    }
+  }
+
+  return { showTime, isTentative };
+}
+
 function parseCalendarConfig(calendarConfig) {
   const schedules = [];
+  let debugged = false;
 
-  const entries = calendarConfig.EmbeddedValues || calendarConfig.Values || [];
-  if (!Array.isArray(entries)) return schedules;
+  const entries = calendarConfig.EmbeddedValues || calendarConfig.LinkedComponentValues || calendarConfig.Values || [];
+  if (!Array.isArray(entries)) {
+    console.log(`    ⚠ calendarConfig has no iterable entries. Keys: ${Object.keys(calendarConfig).join(', ')}`);
+    return schedules;
+  }
 
   for (const entry of entries) {
     // Extract dates
     const dateTimeValues = entry.eventDates?.DateTimeValues || [];
     if (dateTimeValues.length === 0) continue;
 
-    // Extract show time from blockData → eyebrow
-    let showTime = 'Unknown';
-    let isTentative = false;
-
-    const blockEntries = entry.blockData?.EmbeddedValues || [];
-    if (blockEntries.length > 0) {
-      const block = blockEntries[0];
-      showTime = block.eyebrow?.Values?.[0] || 'Unknown';
-      
-      const style = block.style?.Values?.[0] || '';
-      isTentative = style.toLowerCase().includes('disabled');
+    // Debug: log the blockData structure for the first entry
+    if (!debugged && entry.blockData) {
+      const bdKeys = Object.keys(entry.blockData);
+      console.log(`    blockData keys: ${bdKeys.join(', ')}`);
+      for (const k of bdKeys) {
+        const val = entry.blockData[k];
+        if (Array.isArray(val) && val.length > 0) {
+          const firstKeys = typeof val[0] === 'object' ? Object.keys(val[0]).join(', ') : typeof val[0];
+          console.log(`    blockData.${k}[0] keys: ${firstKeys}`);
+          // If it has Fields, show those too
+          if (val[0].Fields) {
+            console.log(`    blockData.${k}[0].Fields keys: ${Object.keys(val[0].Fields).join(', ')}`);
+          }
+        }
+      }
+      debugged = true;
+    } else if (!debugged) {
+      console.log(`    ⚠ First entry has no blockData. Entry keys: ${Object.keys(entry).join(', ')}`);
+      debugged = true;
     }
+
+    // Extract show time and tentative status
+    const { showTime, isTentative } = extractBlockInfo(entry.blockData);
 
     // Create a schedule record for each date
     for (const dt of dateTimeValues) {

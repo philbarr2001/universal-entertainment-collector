@@ -26,18 +26,18 @@ const TRACKED_SHOWS = [
     cms_url: 'https://www.universalorlando.com/webdata/k2/en/us/things-to-do/shows/universal-mega-movie-parade/index.html'
   },
   {
-  id: 'usf-mardi-gras-parade',
-  name: 'Universal Mardi Gras Parade',
-  park: 'Universal Studios Florida',
-  type: 'parade',
-  url: 'https://www.universalorlando.com/webdata/k2/en/us/things-to-do/events/mardi-gras/parade/index.html'
-},
-  {
     show_id: 'islands-of-adventure-hogwarts-lights',
     show_name: 'The Nighttime Lights at Hogwarts Castle',
     park_name: "Universal's Islands of Adventure",
     show_type: 'PROJECTION_SHOW',
     cms_url: 'https://www.universalorlando.com/webdata/k2/en/us/things-to-do/entertainment/the-nighttime-lights-at-hogwarts-castle/index.html'
+  },
+  {
+    show_id: 'usf-mardi-gras-parade',
+    show_name: 'Universal Mardi Gras Parade',
+    park_name: 'Universal Studios Florida',
+    show_type: 'PARADE',
+    cms_url: 'https://www.universalorlando.com/webdata/k2/en/us/things-to-do/events/mardi-gras/parade/index.html'
   }
 ];
 
@@ -321,7 +321,7 @@ async function upsertSchedules(records) {
 
   // Supabase REST upsert — POST with merge-duplicates on UNIQUE(show_id, schedule_date)
   return supabaseRequest(
-    'universal_entertainment_schedules?on_conflict=show_id,schedule_date',
+    'universal_entertainment_schedules',
     'POST',
     records,
     { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
@@ -346,7 +346,7 @@ async function logChanges(changes) {
  */
 async function upsertShowStatus(statusRecord) {
   return supabaseRequest(
-    'universal_show_status?on_conflict=show_id',
+    'universal_show_status',
     'POST',
     statusRecord,
     { 'Prefer': 'resolution=merge-duplicates,return=minimal' }

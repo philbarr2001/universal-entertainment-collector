@@ -26,6 +26,13 @@ const TRACKED_SHOWS = [
     cms_url: 'https://www.universalorlando.com/webdata/k2/en/us/things-to-do/shows/universal-mega-movie-parade/index.html'
   },
   {
+  id: 'usf-mardi-gras-parade',
+  name: 'Universal Mardi Gras Parade',
+  park: 'Universal Studios Florida',
+  type: 'parade',
+  url: 'https://www.universalorlando.com/webdata/k2/en/us/things-to-do/events/mardi-gras/parade/index.html'
+}
+  {
     show_id: 'islands-of-adventure-hogwarts-lights',
     show_name: 'The Nighttime Lights at Hogwarts Castle',
     park_name: "Universal's Islands of Adventure",

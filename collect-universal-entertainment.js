@@ -314,7 +314,7 @@ async function upsertSchedules(records) {
 
   // Supabase REST upsert — POST with merge-duplicates on UNIQUE(show_id, schedule_date)
   return supabaseRequest(
-    'universal_entertainment_schedules',
+    'universal_entertainment_schedules?on_conflict=show_id,schedule_date',
     'POST',
     records,
     { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
@@ -339,7 +339,7 @@ async function logChanges(changes) {
  */
 async function upsertShowStatus(statusRecord) {
   return supabaseRequest(
-    'universal_show_status',
+    'universal_show_status?on_conflict=show_id',
     'POST',
     statusRecord,
     { 'Prefer': 'resolution=merge-duplicates,return=minimal' }

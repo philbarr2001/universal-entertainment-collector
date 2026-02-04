@@ -1,0 +1,13 @@
+{
+  "name": "universal-entertainment-collector",
+  "version": "1.0.0",
+  "description": "Collects Universal Orlando entertainment schedules from CMS and upserts to Supabase",
+  "main": "collect-universal-entertainment.js",
+  "scripts": {
+    "start": "node collect-universal-entertainment.js",
+    "collect": "node collect-universal-entertainment.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
